@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>292Bet — Admin Panel</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--card:#151d30;--line:#28344d;--gold:#ffd166;--blue:#4da3ff;--muted:#9aa8c2}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#eef3ff;font:15px system-ui,-apple-system,"Noto Sans Bengali",sans-serif}
+header{padding:18px 16px;background:#111a2c;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:3}header h1{margin:0;color:var(--gold);font-size:22px}header p{margin:5px 0 0;color:var(--muted);font-size:12px}
+main{max-width:1100px;margin:auto;padding:16px}.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+h2{font-size:17px;margin:0 0 12px}label{display:block;color:#c4cde0;font-size:13px;margin:10px 0 5px}input,button{font:inherit;border-radius:9px;padding:12px;border:1px solid var(--line)}input{width:100%;background:#0d1424;color:#fff}button{background:var(--blue);border:0;color:#071326;font-weight:800;cursor:pointer}button.secondary{background:#26344d;color:#fff}button:disabled{opacity:.5}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{padding:14px;background:#0e1729;border:1px solid var(--line);border-radius:12px}.stat span{display:block;color:var(--muted);font-size:12px}.stat b{display:block;font-size:23px;margin-top:5px;overflow-wrap:anywhere}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}nav button{background:#25324a;color:#fff;padding:10px 12px}nav button.active{background:var(--gold);color:#1b1b1b}
+.status{font-size:13px;color:var(--muted);white-space:pre-wrap;line-height:1.5}.status.error{color:#ff9292}.status.ok{color:#8be6a0}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px;font-size:13px}th,td{padding:10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--gold);font-weight:700}td{overflow-wrap:anywhere}.hidden{display:none!important}.notice{background:#2a2416;border:1px solid #6e5722;color:#ffe7a1;padding:12px;border-radius:10px;font-size:13px;line-height:1.5}
+@media(min-width:700px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}.login-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+</style>
+</head>
+<body>
+<header><h1>292Bet — Admin Panel</h1><p>প্রশাসনিক ড্যাশবোর্ড • অনুমোদিত অ্যাডমিন অ্যাকাউন্টের জন্য</p></header>
+<main>
+<section id="loginPanel" class="panel">
+<h2>অ্যাডমিন লগইন</h2>
+<div class="login-grid">
+<div><label for="email">অ্যাডমিন ইমেইল</label><input id="email" type="email" autocomplete="username" value="mdshohag344@gmail.com"></div>
+<div><label for="password">পাসওয়ার্ড</label><input id="password" type="password" autocomplete="current-password" placeholder="Firebase Auth পাসওয়ার্ড"></div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button id="loginBtn">লগইন</button><button id="logoutBtn" class="secondary hidden">লগআউট</button></div>
+<p id="loginStatus" class="status" role="status">Firebase Authentication দিয়ে লগইন করুন।</p>
+</section>
+<section id="dashboard" class="hidden">
+<div class="panel">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2>সারসংক্ষেপ</h2><button id="refreshBtn" class="secondary">তথ্য রিফ্রেশ</button></div>
+<div class="grid">
+<div class="stat"><span>Firestore-এ থাকা প্রোফাইল</span><b id="userCount">—</b></div>
+<div class="stat"><span>গেম রেকর্ড</span><b id="betCount">—</b></div>
+<div class="stat"><span>পেন্ডিং ডিপোজিট</span><b id="pendingCount">—</b></div>
+<div class="stat"><span>অনলাইন ব্যবহারকারী</span><b id="onlineCount">উপলভ্য নয়</b></div>
+<div class="stat"><span>Firestore প্রোফাইলগুলোর ব্যালেন্স যোগফল</span><b id="balanceTotal">—</b></div>
+<div class="stat"><span>অনুমোদিত ডিপোজিটের মোট</span><b id="depositTotal">—</b></div>
+<div class="stat"><span>উইথড্র মোট</span><b id="withdrawTotal">তথ্য নেই</b></div>
+<div class="stat"><span>গেমে মোট বেট</span><b id="betTotal">—</b></div>
+</div>
+<p id="loadStatus" class="status"></p>
+</div>
+<nav id="tabs">
+<button class="active" data-tab="users">ব্যবহারকারী</button><button data-tab="bets">গেম/বেট</button><button data-tab="deposits">ডিপোজিট</button><button data-tab="withdrawals">উইথড্র</button><button data-tab="messages">সবাইকে মেসেজ</button>
+</nav>
+<section class="panel" id="users"><h2>ব্যবহারকারীদের তালিকা</h2><div class="tablewrap"><table><thead><tr><th>UID</th><th>ইউজারনেম</th><th>ব্যালেন্স</th><th>ইমেইল</th></tr></thead><tbody id="usersRows"></tbody></table></div></section>
+<section class="panel hidden" id="bets"><h2>গেমের বেট ও ফলাফল</h2><div class="tablewrap"><table><thead><tr><th>সময়</th><th>ব্যবহারকারী</th><th>গেম</th><th>বেট</th><th>জিতেছে</th><th>লাভ/ক্ষতি</th><th>ফলাফল</th><th>রাউন্ড</th></tr></thead><tbody id="betsRows"></tbody></table></div></section>
+<section class="panel hidden" id="deposits"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2>ডিপোজিট রিকোয়েস্ট</h2><button id="refreshDepositsBtn" class="secondary" type="button">ডিপোজিট রিফ্রেশ</button></div><div class="tablewrap"><table><thead><tr><th>সময়</th><th>ব্যবহারকারী</th><th>পরিমাণ</th><th>বোনাস</th><th>মোট</th><th>পদ্ধতি</th><th>Transaction ID</th><th>Request ID</th><th>স্ট্যাটাস</th></tr></thead><tbody id="depositsRows"></tbody></table></div></section>
+<section class="panel hidden" id="withdrawals"><h2>উইথড্র রিকোয়েস্ট</h2><div class="notice">আপলোড করা সাইটের ফাইলে উইথড্র রিকোয়েস্টের নিশ্চিত Firestore collection/schema পাওয়া যায়নি। তাই এখানে সংখ্যা বা রেকর্ড বানিয়ে দেখানো হচ্ছে না। উইথড্র-ব্যবস্থা Firestore-এ সেভ করে তার collection নাম যুক্ত করার পরেই রিপোর্ট দেখানো যাবে।</div></section>
+<section class="panel hidden" id="messages">
+<h2>সব খেলোয়াড়কে ঘোষণা / মেসেজ</h2>
+<div class="notice">এখানে পাঠানো ঘোষণা প্রতিটি লগইন করা খেলোয়াড়ের সাইটে ইনবক্সে দেখা যাবে। পাঠানোর আগে লেখা ভালোভাবে যাচাই করুন।</div>
+<label for="messageTitle">মেসেজের শিরোনাম</label><input id="messageTitle" maxlength="90" placeholder="যেমন: গুরুত্বপূর্ণ ঘোষণা">
+<label for="messageText">মেসেজ</label><textarea id="messageText" maxlength="1500" rows="5" style="width:100%;background:#0d1424;color:#fff;border:1px solid var(--line);border-radius:9px;padding:12px;font:inherit" placeholder="আপনার মেসেজ লিখুন..."></textarea>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button id="sendMessageBtn">সবাইকে পাঠান</button><button id="loadMessagesBtn" class="secondary">আগের মেসেজ দেখুন</button></div>
+<p id="messageStatus" class="status" role="status"></p>
+<div class="tablewrap"><table><thead><tr><th>তারিখ</th><th>শিরোনাম</th><th>মেসেজ</th></tr></thead><tbody id="messagesRows"></tbody></table></div>
+</section>
+<div class="panel notice"><b>গুরুত্বপূর্ণ হিসাব-সতর্কতা:</b> এই প্যানেল শুধু Firestore-এ থাকা ডেটা দেখায়—Firebase Authentication-এর সব অ্যাকাউন্ট সরাসরি তালিকাভুক্ত করতে পারে না। তোমার স্ক্রিনশটে Authentication-এ ২১টি অ্যাকাউন্ট, কিন্তু Firestore users-এ ৩টি প্রোফাইল দেখা গেছে। তাই এখানে দেখানো ব্যালেন্স কেবল ওই Firestore প্রোফাইলগুলোর যোগফল; এটিকে সব ইউজারের প্রকৃত ব্যালেন্স ধরে নিও না। পুরোনো localStorage ডেটা অন্য ডিভাইস থেকে পাওয়া যায় না। অনলাইন/উইথড্রের জন্য আলাদা সংরক্ষণ ব্যবস্থা প্রয়োজন।</div>
+</section>
+</main>
+<script>
+'use strict';
+const PROJECT_ID='bet-registration-page';
+const API_KEY='AIzaSyD0FpL4kxLBQo8ZfyyjXMRrwn9hU6ralFs';
+const ADMIN_EMAIL='mdshohag344@gmail.com';
+let idToken='',refreshToken='',currentEmail='';
+const $=id=>document.getElementById(id);
+function setStatus(id,msg,kind=''){const e=$(id);e.textContent=msg;e.className='status '+kind;}
+function money(n){return '৳ '+(Number(n)||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function decode(v){if(!v)return null;if('stringValue'in v)return v.stringValue;if('integerValue'in v)return Number(v.integerValue);if('doubleValue'in v)return Number(v.doubleValue);if('booleanValue'in v)return v.booleanValue;if('timestampValue'in v)return v.timestampValue;if('nullValue'in v)return null;if(v.arrayValue)return(v.arrayValue.values||[]).map(decode);if(v.mapValue)return fields(v.mapValue.fields||{});return null;}
+function fields(fs){const o={};Object.entries(fs||{}).forEach(([k,v])=>o[k]=decode(v));return o;}
+function docObj(d){return {...fields(d.fields||{}),id:(d.name||'').split('/').pop()};}
+async function authLogin(email,password){
+ const r=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+encodeURIComponent(API_KEY),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,returnSecureToken:true})});
+ const d=await r.json();if(!r.ok)throw Error(d.error?.message||'লগইন ব্যর্থ');
+ if(String(d.email||email).toLowerCase()!==ADMIN_EMAIL)throw Error('এই ইমেইল অ্যাডমিন হিসেবে অনুমোদিত নয়।');
+ idToken=d.idToken;refreshToken=d.refreshToken;currentEmail=String(d.email||email).toLowerCase();
+}
+async function refreshAuth(){
+ if(!refreshToken)throw Error('সেশন শেষ হয়েছে। আবার লগইন করুন।');
+ const r=await fetch('https://securetoken.googleapis.com/v1/token?key='+encodeURIComponent(API_KEY),{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'refresh_token',refresh_token:refreshToken})});
+ const d=await r.json();if(!r.ok)throw Error(d.error?.message||'সেশন রিফ্রেশ করা যায়নি');idToken=d.id_token;refreshToken=d.refresh_token;
+}
+async function api(url,opts={},retried=false){
+ const r=await fetch(url,{...opts,headers:{Authorization:'Bearer '+idToken,'Content-Type':'application/json',...(opts.headers||{})}});
+ const d=await r.json().catch(()=>({}));
+ if(r.status===401&&!retried){await refreshAuth();return api(url,opts,true);}
+ if(!r.ok)throw Error(d.error?.message||('Firestore error '+r.status));return d;
+}
+function base(){return 'https://firestore.googleapis.com/v1/projects/'+PROJECT_ID+'/databases/(default)/documents';}
+async function listCollection(name){
+ const all=[];let token='';
+ for(let i=0;i<100;i++){
+  let url=base()+'/'+name+'?pageSize=100'+(token?'&pageToken='+encodeURIComponent(token):'');
+  const d=await api(url);all.push(...(d.documents||[]));token=d.nextPageToken||'';if(!token)break;
+ }
+ if(token)throw Error('Collection-এ ১০,০০০টির বেশি রেকর্ড আছে; আরও পেজিং দরকার।');
+ return all.map(docObj);
+}
+function renderRows(id,rows,cols,empty='কোনো রেকর্ড পাওয়া যায়নি।'){
+ const body=$(id);if(!rows.length){body.innerHTML='<tr><td colspan="'+cols+'" style="color:#9aa8c2">'+empty+'</td></tr>';return;}
+ body.innerHTML=rows.map(row=>'<tr>'+row.map(v=>'<td>'+esc(v??'—')+'</td>').join('')+'</tr>').join('');
+}
+function dateVal(v){if(!v)return '—';const d=new Date(v);return Number.isNaN(d.getTime())?String(v):d.toLocaleString('bn-BD');}
+async function loadData(){
+ setStatus('loadStatus','Firestore থেকে তথ্য আনা হচ্ছে…');
+ const names=['users','betRecords','depositRequests'];
+ const results=await Promise.allSettled(names.map(listCollection));
+ const get=i=>results[i].status==='fulfilled'?results[i].value:[];
+ const users=get(0),bets=get(1),deposits=get(2);
+ const errors=results.map((r,i)=>r.status==='rejected'?names[i]+': '+r.reason.message:'').filter(Boolean);
+ $('userCount').textContent=users.length;
+ $('betCount').textContent=bets.length;
+ $('pendingCount').textContent=deposits.filter(x=>String(x.status).toLowerCase()==='pending').length;
+ $('balanceTotal').textContent=money(users.reduce((s,u)=>s+(Number(u.balance)||0),0));
+ $('depositTotal').textContent=money(deposits.filter(x=>String(x.status).toLowerCase()==='approved').reduce((s,x)=>s+(Number(x.amount)||0),0));
+ $('betTotal').textContent=money(bets.reduce((s,x)=>s+(Number(x.amount)||0),0));
+ renderRows('usersRows',users.map(u=>[u.uid||u.id,u.username||u.name||'—',money(u.balance),u.email||'—']),4);
+ const sixMonthsAgo=Date.now()-183*24*60*60*1000;
+  const recentBets=bets.filter(b=>{const t=Date.parse(b.createdAt||b.betTime||b.time||'');return Number.isFinite(t)&&t>=sixMonthsAgo;});
+  renderRows('betsRows',recentBets.slice().sort((a,b)=>String(b.createdAt||b.time||'').localeCompare(String(a.createdAt||a.time||''))).map(b=>[dateVal(b.createdAt||b.betTime||b.time),b.username||b.playerUid||'—',b.game||'—',money(b.amount),money(b.win),money(b.pnl),b.result||'চলমান',b.round||'—']),8);
+ renderRows('depositsRows',deposits.slice().sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).map(d=>[dateVal(d.createdAt||d.time),d.username||d.playerUid||'—',money(d.amount),money(d.bonus),money(d.total),[d.method,d.channel].filter(Boolean).join(' / ')||'—',d.trxId||'—',d.requestId||d.id||'—',d.status||'—']),9);
+ if(errors.length){setStatus('loadStatus','কিছু তথ্য পড়া যায়নি:\n'+errors.join('\n')+'\nFirestore Rules-এ অ্যাডমিন read অনুমতি যাচাই করুন।','error');}
+ else setStatus('loadStatus','সর্বশেষ আপডেট: '+new Date().toLocaleString('bn-BD')+'. সতর্কতা: ব্যালেন্সের যোগফল শুধু Firestore users প্রোফাইল থেকে। সব Authentication অ্যাকাউন্ট বা ফোনের localStorage এতে অন্তর্ভুক্ত নয়.','ok');
+}
+
+async function sendBroadcast(){
+ const title=$('messageTitle').value.trim(),message=$('messageText').value.trim();
+ if(!title||!message){setStatus('messageStatus','শিরোনাম ও মেসেজ—দুটিই লিখুন।','error');return;}
+ if(title.length>90||message.length>1500){setStatus('messageStatus','মেসেজের দৈর্ঘ্য সীমা অতিক্রম করেছে।','error');return;}
+ const btn=$('sendMessageBtn');btn.disabled=true;setStatus('messageStatus','মেসেজ পাঠানো হচ্ছে…');
+ try{
+  const id='notice_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  const body={fields:{title:{stringValue:title},message:{stringValue:message},targetAll:{booleanValue:true},createdBy:{stringValue:currentEmail},createdAt:{timestampValue:new Date().toISOString()}}};
+  await api(base()+'/adminMessages?documentId='+encodeURIComponent(id),{method:'POST',body:JSON.stringify(body)});
+  $('messageTitle').value='';$('messageText').value='';
+  setStatus('messageStatus','মেসেজ Firestore-এ পাঠানো হয়েছে। খেলোয়াড়দের ইনবক্সে দেখাতে Rules ও সাইটের আপডেটও লাগবে।','ok');
+  await loadBroadcasts();
+ }catch(e){setStatus('messageStatus','পাঠানো যায়নি: '+e.message+'। Firestore Rules-এ adminMessages create অনুমতি আছে কি না দেখুন।','error');}
+ finally{btn.disabled=false;}
+}
+async function loadBroadcasts(){
+ try{
+  const rows=await listCollection('adminMessages');
+  renderRows('messagesRows',rows.filter(x=>x.targetAll===true).sort((x,y)=>String(y.createdAt||'').localeCompare(String(x.createdAt||''))).map(x=>[dateVal(x.createdAt),x.title||'—',x.message||'—']),3);
+ }catch(e){setStatus('messageStatus','মেসেজ লোড হয়নি: '+e.message,'error');}
+}
+$('sendMessageBtn').addEventListener('click',sendBroadcast);
+$('loadMessagesBtn').addEventListener('click',loadBroadcasts);
+$('loginBtn').addEventListener('click',async()=>{
+ $('loginBtn').disabled=true;setStatus('loginStatus','লগইন করা হচ্ছে…');
+ try{await authLogin($('email').value.trim(),$('password').value);$('loginPanel').classList.add('hidden');$('dashboard').classList.remove('hidden');$('logoutBtn').classList.remove('hidden');await loadData();}
+ catch(e){idToken='';refreshToken='';setStatus('loginStatus','লগইন/অনুমতি সমস্যা: '+e.message,'error');}
+ finally{$('loginBtn').disabled=false;}
+});
+$('logoutBtn').addEventListener('click',()=>{idToken='';refreshToken='';currentEmail='';$('dashboard').classList.add('hidden');$('loginPanel').classList.remove('hidden');$('logoutBtn').classList.add('hidden');$('password').value='';setStatus('loginStatus','লগআউট হয়েছে।');});
+$('refreshBtn').addEventListener('click',()=>loadData().catch(e=>setStatus('loadStatus','তথ্য লোড হয়নি: '+e.message,'error')));
+$('refreshDepositsBtn')?.addEventListener('click',()=>loadData().catch(e=>setStatus('loadStatus','ডিপোজিট লোড হয়নি: '+e.message,'error')));
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b)return;document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('active',x===b));['users','bets','deposits','withdrawals','messages'].forEach(id=>$(id).classList.toggle('hidden',id!==b.dataset.tab));});
+</script>
+</body></html>
